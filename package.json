@@ -1,0 +1,18 @@
+{
+  "name": "@joeyguerra/chatopsjs",
+  "module": "index.js",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run src/cli.js",
+    "cli": "bun run src/cli.js",
+    "example:discord": "bun run src/cli.js --adapter ./examples/discord/app.js",
+    "test": "bun test"
+  },
+  "optionalDependencies": {
+    "discord.js": "^14.19.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
