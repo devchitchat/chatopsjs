@@ -32,6 +32,14 @@ Send these messages in a channel the bot can read:
 yes
 ```
 
+## Bot name as prefix
+
+You have to use the bot id with the <@...> characters as the prefix for it to respond to a DM from chat.
+
+```bash
+DISCORD_PREFIX=<@1461813068441981023>
+```
+
 ## How It Works
 
 - `modules/` is the shared module inventory loaded by the runtime bootstrap

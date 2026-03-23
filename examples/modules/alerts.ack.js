@@ -1,4 +1,4 @@
-import { Command, createNativeResponse } from '../src/index.js'
+import { Command, createNativeResponse } from '../../src/index.js'
 
 export default async robot => {
   robot.commands.register(new Command({

@@ -27,7 +27,7 @@ export async function runAdapterApp({
     ]
   })
 
-  const robot = await Robot.create()
+  const robot = await Robot.create({ directory: '../modules', baseUrl: import.meta.url })
   const adapter = new DiscordAdapter(robot, client, { prefix, token })
   robot.adapters.add(adapter)
   await adapter.start()

@@ -300,7 +300,7 @@ export class Robot {
 
     const validationErrors = validateArgs(command, parsed.args)
     if (validationErrors.length > 0) {
-      await adapter?.send(envelope, { text: 'Invalid command arguments.' })
+      await adapter?.send(envelope, { text: `Invalid command arguments. ${validationErrors.map(error => `--${error.field} (${error.code})`).join(', ')}` })
       return { ok: false, error: { code: 'validation_failed', errors: validationErrors }, meta }
     }
 
