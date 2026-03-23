@@ -1,7 +1,9 @@
-import { createCommand } from '../../../src/index.js'
+import { Command } from '../../../src/index.js'
 
-export default createCommand({
-  id: 'tickets.list',
-  description: 'List tickets',
-  execute: async () => null
-})
+export default async robot => {
+  robot.commands.register(new Command({
+    id: 'tickets.list',
+    description: 'List tickets',
+    handler: async () => null
+  }))
+}

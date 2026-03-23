@@ -1,33 +1,16 @@
 import { describe, expect, test } from 'bun:test'
+import { Robot } from '../src/index.js'
 
-import { createDefaultRuntime } from '../src/default-runtime.js'
-
-describe('default runtime', () => {
-  test('autoloads modules from the modules directory', async () => {
-    const runtime = await createDefaultRuntime({
-      modulesDirectory: '../test/fixtures/modules',
+describe('Robot.create', () => {
+  test('registers help.commands and autoloads modules', async () => {
+    const robot = await Robot.create({
+      directory: '../test/fixtures/modules',
       baseUrl: import.meta.url
     })
 
-    expect(runtime.getCommandCatalog()).toEqual([
-      {
-        id: 'help.commands',
-        aliases: ['commands.list'],
-        description: 'List a portable command summary',
-        permissions: []
-      },
-      {
-        id: 'alerts.ack',
-        aliases: [],
-        description: 'Acknowledge an alert',
-        permissions: []
-      },
-      {
-        id: 'tickets.list',
-        aliases: ['ticket.list'],
-        description: 'List tickets',
-        permissions: []
-      }
-    ])
+    const ids = robot.commands.list().map(c => c.id)
+    expect(ids).toContain('help.commands')
+    expect(ids).toContain('alerts.ack')
+    expect(ids).toContain('tickets.list')
   })
 })

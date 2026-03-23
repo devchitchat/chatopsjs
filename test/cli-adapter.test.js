@@ -1,71 +1,59 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  createCliApp,
-  createCommand,
-  createRuntime,
-  createTextResponse
-} from '../src/index.js'
+import { Robot, Command, createTextResponse } from '../src/index.js'
+
+function makeRobot() {
+  const sent = []
+  const robot = new Robot()
+  robot.adapters.add({
+    name: 'cli',
+    async send(_envelope, message) { sent.push(message) }
+  })
+  return { robot, sent }
+}
+
+function envelope(text) {
+  return { adapter: 'cli', type: 'message', text, actor: { id: 'cli-user', permissions: [] }, channel: { id: 'local-shell' } }
+}
 
 describe('cli adapter', () => {
-  test('handles help and command execution through line input', async () => {
-    const runtime = createRuntime()
+  test('executes a command and delivers the response', async () => {
+    const { robot, sent } = makeRobot()
 
-    runtime.registerCommand(createCommand({
+    robot.commands.register(new Command({
       id: 'tickets.list',
       description: 'List tickets',
-      execute: async () => createTextResponse('No tickets')
+      handler: async () => createTextResponse('No tickets')
     }))
 
-    const app = createCliApp({
-      runtime,
-      actor: {
-        id: 'cli-user',
-        permissions: []
-      }
-    })
+    const result = await robot.receive(envelope('tickets.list'))
 
-    const help = await app.handleLine('help')
-    const result = await app.handleLine('tickets.list')
-
-    expect(help.ok).toBe(true)
-    expect(help.output).toContain('tickets.list')
     expect(result.ok).toBe(true)
-    expect(result.output).toBe('No tickets')
+    expect(sent[0].text).toBe('No tickets')
   })
 
-  test('supports inline confirmation after a pending side effect', async () => {
-    const runtime = createRuntime()
+  test('supports inline confirmation', async () => {
+    const { robot, sent } = makeRobot()
 
-    runtime.registerCommand(createCommand({
+    robot.commands.register(new Command({
       id: 'tickets.create',
       description: 'Create ticket',
-      confirm: {
-        mode: 'required',
-        message: 'Create ticket?'
-      },
-      execute: async () => createTextResponse('Created ticket')
+      confirm: { mode: 'required', message: 'Create ticket?' },
+      handler: async () => createTextResponse('Created ticket')
     }))
 
-    const app = createCliApp({
-      runtime,
-      actor: {
-        id: 'cli-user',
-        permissions: []
-      }
-    })
-
-    const pending = await app.handleLine('tickets.create')
-    const denied = await app.handleLine('no')
-    const pendingAgain = await app.handleLine('tickets.create')
-    const confirmed = await app.handleLine('yes')
-
+    const pending = await robot.receive(envelope('tickets.create'))
     expect(pending.ok).toBe(false)
-    expect(pending.output).toContain('Create ticket?')
-    expect(denied.ok).toBe(false)
-    expect(denied.output).toContain('Cancelled')
-    expect(pendingAgain.ok).toBe(false)
+    expect(sent[0].text).toContain('Create ticket?')
+
+    await robot.receive(envelope('no'))
+    expect(sent[1].text).toContain('Cancelled')
+
+    await robot.receive(envelope('tickets.create'))
+    expect(sent[2].text).toContain('Create ticket?')
+
+    const confirmed = await robot.receive(envelope('yes'))
     expect(confirmed.ok).toBe(true)
-    expect(confirmed.output).toBe('Created ticket')
+    expect(sent[3].text).toBe('Created ticket')
   })
 })

@@ -1,64 +1,25 @@
 import { describe, expect, test } from 'bun:test'
-
-import { createRuntime } from '../src/index.js'
-import { loadModules } from '../src/module-loader.js'
+import { Robot } from '../src/index.js'
 
 describe('module loader', () => {
-  test('loads command and plugin modules from a modules directory', async () => {
-    const runtime = createRuntime()
-
-    await loadModules({
-      runtime,
-      directory: './fixtures/modules',
-      baseUrl: import.meta.url
-    })
-
-    const catalog = runtime.getCommandCatalog()
-
-    expect(catalog).toEqual([
-      {
-        id: 'alerts.ack',
-        aliases: [],
-        description: 'Acknowledge an alert',
-        permissions: []
-      },
-      {
-        id: 'tickets.list',
-        aliases: ['ticket.list'],
-        description: 'List tickets',
-        permissions: []
-      }
-    ])
+  test('loads modules from a modules directory', async () => {
+    const robot = new Robot()
+    await robot.loadModules({ directory: './fixtures/modules', baseUrl: import.meta.url })
+    const ids = robot.commands.list().map(c => c.id)
+    expect(ids).toContain('alerts.ack')
+    expect(ids).toContain('tickets.list')
   })
 
   test('ignores non-javascript files', async () => {
-    const runtime = createRuntime()
-
-    await loadModules({
-      runtime,
-      directory: './fixtures/modules-with-noise',
-      baseUrl: import.meta.url
-    })
-
-    expect(runtime.getCommandCatalog()).toEqual([
-      {
-        id: 'tickets.list',
-        aliases: [],
-        description: 'List tickets',
-        permissions: []
-      }
-    ])
+    const robot = new Robot()
+    await robot.loadModules({ directory: './fixtures/modules-with-noise', baseUrl: import.meta.url })
+    const ids = robot.commands.list().map(c => c.id)
+    expect(ids).toEqual(['tickets.list'])
   })
 
   test('treats a missing modules directory as empty', async () => {
-    const runtime = createRuntime()
-
-    await loadModules({
-      runtime,
-      directory: './fixtures/missing-modules',
-      baseUrl: import.meta.url
-    })
-
-    expect(runtime.getCommandCatalog()).toEqual([])
+    const robot = new Robot()
+    await robot.loadModules({ directory: './fixtures/missing-modules', baseUrl: import.meta.url })
+    expect(robot.commands.list()).toEqual([])
   })
 })

@@ -1,7 +1,9 @@
-import { createCommand } from '../../../src/index.js'
+import { Command } from '../../../src/index.js'
 
-export const command = createCommand({
-  id: 'alerts.ack',
-  description: 'Acknowledge an alert',
-  execute: async () => null
-})
+export default async robot => {
+  robot.commands.register(new Command({
+    id: 'alerts.ack',
+    description: 'Acknowledge an alert',
+    handler: async () => null
+  }))
+}
