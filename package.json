@@ -12,7 +12,10 @@
   "scripts": {
     "start": "bun run src/cli.js",
     "example:discord": "bun run src/cli.js --adapter ./examples/discord/app.js",
-    "test": "bun test"
+    "test": "bun test",
+    "docs:build": "bun bin/build-docs.js",
+    "docs:watch": "bun --watch bin/build-docs.js",
+    "docs:serve": "bun run bin/build-docs.js && bunx serve dist"
   },
   "devDependencies": {
     "@types/bun": "latest"

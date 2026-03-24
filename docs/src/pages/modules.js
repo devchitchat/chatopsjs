@@ -1,0 +1,330 @@
+export const page = {
+  title: 'Creating Modules',
+  description: 'Learn how to package commands, middleware, and setup logic into auto-loading chatops.js modules.',
+  nav: 'modules',
+  hero: false,
+  content: `
+<div class="page-header">
+  <div class="page-eyebrow">Field Manual · Module Development</div>
+  <h1 class="page-title">Creating Modules</h1>
+  <p class="page-subtitle">
+    Modules package commands, middleware, and setup logic into isolated units.
+    Drop a <code>.js</code> file into your modules directory and it loads automatically.
+  </p>
+</div>
+
+<h2 id="module-basics">Module Basics</h2>
+
+<p>A module is a <code>.js</code> file that exports an <strong>async default function</strong> receiving the <code>robot</code> instance:</p>
+
+<pre data-lang="js"><code>// modules/ping.js
+import { Command, createTextResponse } from '@devchitchat/chatopsjs'
+
+export default async function (robot) {
+  robot.commands.register(new Command({
+    id:          'ping',
+    description: 'Check if the bot is alive',
+    handler:     async () =&gt; createTextResponse('Pong! 🏓')
+  }))
+}</code></pre>
+
+<p>Place this in your <code>./modules/</code> directory, then create your robot:</p>
+
+<pre data-lang="js"><code>const robot = await Robot.create({ directory: './modules' })
+// ping command is now registered automatically</code></pre>
+
+<div class="callout tip">
+  <span class="callout-icon">💡</span>
+  <div class="callout-body">
+    <div class="callout-title">Module Loading Order</div>
+    <p>Modules are loaded in alphabetical order by file path. Name files with a numeric prefix (e.g. <code>01-auth.js</code>, <code>02-deploys.js</code>) to control load order when it matters.</p>
+  </div>
+</div>
+
+<h2 id="command-class">The Command Class</h2>
+
+<p>Every command is a <code>Command</code> instance with a canonical ID:</p>
+
+<pre data-lang="js"><code>new Command({
+  id:          'tickets.create',     // canonical ID — must be unique
+  description: 'Open a new ticket', // shown in help
+  aliases:     ['ticket new', 'tc'], // alternative invocations
+  args: {
+    title:    { type: 'string', required: true },
+    priority: { type: 'string', required: false }
+  },
+  permissions: ['tickets:write'],    // required grants
+  confirm: {
+    mode:    'yes-no',
+    message: 'Create a ticket? (yes/no)'
+  },
+  handler: async (ctx) =&gt; { /* ... */ }
+})</code></pre>
+
+<h3>Command ID Conventions</h3>
+
+<p>Use dot-notation for namespaced IDs — it keeps related commands grouped in <code>help</code> output and avoids collisions between modules:</p>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Pattern</th><th>Example IDs</th></tr></thead>
+    <tbody>
+      <tr><td><code>resource.action</code></td><td><code>tickets.create</code>, <code>tickets.close</code></td></tr>
+      <tr><td><code>service.action</code></td><td><code>deploy.trigger</code>, <code>deploy.rollback</code></td></tr>
+      <tr><td><code>short</code></td><td><code>ping</code>, <code>help</code>, <code>status</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 id="args">Arguments</h2>
+
+<p>Declare args in the command schema and access them via <code>ctx.args</code>:</p>
+
+<pre data-lang="js"><code>robot.commands.register(new Command({
+  id: 'deploy',
+  args: {
+    service:     { type: 'string', required: true  },
+    version:     { type: 'string', required: true  },
+    environment: { type: 'string', required: false }
+  },
+  handler: async (ctx) =&gt; {
+    const { service, version, environment = 'staging' } = ctx.args
+    return createTextResponse(
+      \`Deploying \${service} \${version} to \${environment}…\`
+    )
+  }
+}))
+
+// Invocation:
+// deploy --service api --version v2.1 --environment production</code></pre>
+
+<h2 id="permissions">Permissions</h2>
+
+<p>Commands declare required permissions as an array of strings. The framework checks them against <code>envelope.actor.permissions</code> before invoking the handler:</p>
+
+<pre data-lang="js"><code>// Declare required permissions on the command
+new Command({
+  id:          'deploy',
+  permissions: ['deploys:write'],
+  handler:     async (ctx) =&gt; { /* ... */ }
+})
+
+// The actor must have 'deploys:write' or the command returns:
+// { ok: false, error: { code: 'permission_denied' } }</code></pre>
+
+<p>Permissions are free-form strings — define whatever scheme makes sense for your team:</p>
+
+<pre data-lang="js"><code>// Common patterns:
+'tickets:read'
+'tickets:write'
+'deploys:staging'
+'deploys:production'
+'incidents:ack'
+'admin'</code></pre>
+
+<h2 id="confirmation">Confirmation Flow</h2>
+
+<p>Use <code>confirm</code> for commands with side effects that should require explicit approval:</p>
+
+<pre data-lang="js"><code>new Command({
+  id:      'db.migrate',
+  confirm: {
+    mode:    'yes-no',
+    message: '⚠️ Run database migration on production? (yes/no)'
+  },
+  handler: async (ctx) =&gt; createTextResponse('Migration started.')
+})
+</code></pre>
+
+<p>When a user runs <code>db.migrate</code>, the adapter holds the pending command and prompts for confirmation. The handler only executes after the user replies <code>yes</code>.</p>
+
+<h2 id="responses">Response Types</h2>
+
+<h3>Text Response</h3>
+<pre data-lang="js"><code>import { createTextResponse } from '@devchitchat/chatopsjs'
+
+return createTextResponse('Operation complete. 🚀')</code></pre>
+
+<h3>Structured Message (IR)</h3>
+
+<p>The intermediate representation lets you express rich messages that each adapter renders natively:</p>
+
+<pre data-lang="js"><code>import { createMessageResponse } from '@devchitchat/chatopsjs'
+
+return createMessageResponse({
+  fallbackText: 'Deployment started',
+  blocks: [
+    {
+      type: 'section',
+      text: '🚀 Deployment started'
+    },
+    {
+      type: 'facts',
+      items: [
+        { label: 'Service',     value: ctx.args.service  },
+        { label: 'Version',     value: ctx.args.version  },
+        { label: 'Environment', value: ctx.args.env      },
+        { label: 'Triggered by', value: ctx.envelope.actor.id }
+      ]
+    }
+  ]
+})</code></pre>
+
+<h3>Native Provider Response</h3>
+
+<p>When you need full provider-specific control, use the native escape hatch:</p>
+
+<pre data-lang="js"><code>import { createNativeResponse } from '@devchitchat/chatopsjs'
+
+// Discord embed example
+return createNativeResponse({
+  fallbackText: 'Alert acknowledged',
+  provider: 'discord',
+  payload: {
+    embeds: [{
+      title:       '✅ Alert Acknowledged',
+      color:       0x00c896,
+      description: \`Alert **\${ctx.args.id}\` acked by \${ctx.envelope.actor.id}\`,
+      timestamp:   new Date().toISOString()
+    }]
+  }
+})</code></pre>
+
+<h2 id="middleware-in-modules">Middleware in Modules</h2>
+
+<p>Modules can also register middleware that applies to all commands:</p>
+
+<pre data-lang="js"><code>// modules/audit.js
+export default async function (robot) {
+  robot.use(async (ctx, next) => {
+    const start = Date.now()
+
+    // Before: log the invocation
+    robot.log('command:start', {
+      command:       ctx.command.id,
+      actor:         ctx.envelope.actor.id,
+      correlationId: ctx.meta.correlationId
+    })
+
+    await next()
+
+    // After: log the result
+    robot.log('command:done', {
+      command:  ctx.command.id,
+      duration: Date.now() - start
+    })
+  })
+}</code></pre>
+
+<h2 id="storage">Using Storage</h2>
+
+<p>Commands get access to a <code>ctx.storage</code> interface for durable state:</p>
+
+<pre data-lang="js"><code>// modules/counter.js
+import { Command, createTextResponse } from '@devchitchat/chatopsjs'
+
+export default async function (robot) {
+  robot.commands.register(new Command({
+    id:          'counter.increment',
+    description: 'Increment the shared counter',
+    handler: async (ctx) =&gt; {
+      const current = (await ctx.storage.get('counter')) ?? 0
+      const next    = current + 1
+      await ctx.storage.set('counter', next)
+      return createTextResponse(\`Counter: \${next}\`)
+    }
+  }))
+
+  robot.commands.register(new Command({
+    id:          'counter.reset',
+    description: 'Reset the counter to zero',
+    permissions: ['admin'],
+    handler: async (ctx) =&gt; {
+      await ctx.storage.set('counter', 0)
+      return createTextResponse('Counter reset.')
+    }
+  }))
+}</code></pre>
+
+<h2 id="listeners">Pattern Listeners</h2>
+
+<p>For ambient messages that aren't explicit commands, use listeners:</p>
+
+<pre data-lang="js"><code>// modules/emoji-reactions.js
+export default async function (robot) {
+  robot.listeners.register(/🚀/, async (envelope, match) =&gt; {
+    // envelope.adapter tells you which adapter received this
+    // Use robot.adapters.get(name) to send a reply
+    const adapter = robot.adapters.get(envelope.adapter)
+    if (adapter) {
+      await adapter.send(envelope, { text: '🚀 Launch detected!' })
+    }
+  })
+}</code></pre>
+
+<div class="callout warning">
+  <span class="callout-icon">⚠️</span>
+  <div class="callout-body">
+    <div class="callout-title">Listeners vs. Commands</div>
+    <p>Prefer commands for anything that performs an action — they're auditable, permissioned, and confirmable. Use listeners only for passive, ambient reactions that don't need access control.</p>
+  </div>
+</div>
+
+<h2 id="full-example">Full Module Example</h2>
+
+<pre data-lang="js"><code>// modules/incidents.js
+import { Command, createTextResponse, createMessageResponse } from '@devchitchat/chatopsjs'
+
+export default async function (robot) {
+
+  robot.commands.register(new Command({
+    id:          'incident.declare',
+    description: 'Declare a new incident',
+    aliases:     ['incident new', 'inc declare'],
+    args: {
+      severity: { type: 'string', required: true  },  // sev1 | sev2 | sev3
+      title:    { type: 'string', required: true  },
+      channel:  { type: 'string', required: false }
+    },
+    permissions: ['incidents:write'],
+    confirm: {
+      mode:    'yes-no',
+      message: '🚨 Declare a new incident? This will page on-call. (yes/no)'
+    },
+    handler: async (ctx) =&gt; {
+      const { severity, title } = ctx.args
+      const id = \`INC-\${Date.now()}\`
+      await ctx.storage.set(id, { severity, title, declaredBy: ctx.envelope.actor.id })
+
+      return createMessageResponse({
+        fallbackText: \`Incident \${id} declared\`,
+        blocks: [
+          { type: 'section', text: \`🚨 **\${id}** — \${title}\` },
+          { type: 'facts',   items: [
+            { label: 'Severity',    value: severity.toUpperCase() },
+            { label: 'Declared by', value: ctx.envelope.actor.id },
+            { label: 'Status',      value: 'OPEN' }
+          ]}
+        ]
+      })
+    }
+  }))
+
+  robot.commands.register(new Command({
+    id:          'incident.ack',
+    description: 'Acknowledge an incident',
+    aliases:     ['inc ack'],
+    args: { id: { type: 'string', required: true } },
+    permissions: ['incidents:write'],
+    handler: async (ctx) =&gt; {
+      const incident = await ctx.storage.get(ctx.args.id)
+      if (!incident) return createTextResponse(\`No incident found: \${ctx.args.id}\`)
+
+      return createTextResponse(
+        \`✅ \${ctx.args.id} acknowledged by \${ctx.envelope.actor.id}\`
+      )
+    }
+  }))
+}</code></pre>
+`
+}
