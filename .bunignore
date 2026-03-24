@@ -1,0 +1,9 @@
+.github
+.vscode
+node_modules
+bin
+dist
+docs
+AGENTS.md
+CLAUD.md
+jsconfig.json

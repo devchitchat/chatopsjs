@@ -1,10 +1,13 @@
 {
-  "name": "@joeyguerra/chatopsjs",
+  "name": "@devchitchat/chatopsjs",
+  "description": "A Bun chatops framework.",
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.js",
   "files": [
-    "src/"
+    "src/",
+    "index.js",
+    "README.md"
   ],
   "scripts": {
     "start": "bun run src/cli.js",
