@@ -1,0 +1,359 @@
+<template data-slot="title">Creating Adapters</template>
+<template data-slot="description">Learn how to build chatops.js adapters for Slack, Discord, Teams, or any messaging platform.</template>
+
+<div class="content">
+<div class="page-header">
+  <div class="page-eyebrow">Field Manual · Adapter Development</div>
+  <h1 class="page-title">Creating Adapters</h1>
+  <p class="page-subtitle">
+    Adapters are thin translation layers. They normalize provider events into envelopes
+    the framework understands, and translate framework responses back to the provider's format.
+  </p>
+</div>
+
+<div class="callout tip">
+  <span class="callout-icon">🎯</span>
+  <div class="callout-body">
+    <div class="callout-title">The Adapter Rule</div>
+    <p>Adapters <strong>translate</strong> — they don't decide. Keep all business logic in command handlers and modules. An adapter should be swappable without changing a single line of module code.</p>
+  </div>
+</div>
+
+<h2 id="anatomy">Anatomy of an Adapter</h2>
+
+<p>Every adapter extends the base <code>Adapter</code> class and implements three methods:</p>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Method</th><th>Responsibility</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>start()</code></td><td>Bootstrap the provider connection (WebSocket, polling, CLI readline, etc.)</td></tr>
+      <tr><td><code>send(envelope, message)</code></td><td>Deliver a response to the channel where the command originated</td></tr>
+      <tr><td><code>reply(envelope, message)</code></td><td>Deliver a response directly to the actor (DM or thread). Defaults to <code>send()</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 id="minimal-adapter">Minimal Adapter</h2>
+
+<pre data-lang="js"><code>import { Adapter } from '@devchitchat/chatopsjs'
+
+export class MyAdapter extends Adapter {
+  constructor(robot, options = {}) {
+    super(robot, 'my-adapter')
+    this.options = options
+  }
+
+  async start() {
+    // 1. Connect to provider
+    // 2. On each incoming message, build an envelope
+    // 3. Call robot.receive(envelope) to dispatch
+    this.robot.log('adapter:start', { adapter: this.name })
+  }
+
+  async send(envelope, message) {
+    // Translate the framework message IR to provider format
+    // envelope.channel.id tells you where to deliver it
+    const text = message.text ?? ''
+    await this.deliver(envelope.channel.id, text)
+  }
+
+  async deliver(channelId, text) {
+    // Your provider SDK call here
+    throw new Error('Not implemented')
+  }
+}</code></pre>
+
+<h2 id="envelope">The Envelope</h2>
+
+<p>When a message arrives from your provider, convert it into an <strong>envelope</strong> and pass it to <code>robot.receive()</code>:</p>
+
+<pre data-lang="js"><code>// Shape of an inbound envelope
+const envelope = {
+  adapter:  'my-adapter',        // your adapter name
+  type:     'message',
+  text:     '!deploy api v2.1', // the raw message text
+  actor: {
+    id:          'U01ABC',       // provider user ID
+    permissions: ['deploys:write']
+  },
+  channel: {
+    id:      'C01XYZ',           // channel / room ID
+    guildId: 'G01DEF'            // optional (Discord guilds, Slack workspaces)
+  }
+  // Add any provider-specific fields you need in handlers
+}</code></pre>
+
+<div class="callout warning">
+  <span class="callout-icon">⚠️</span>
+  <div class="callout-body">
+    <div class="callout-title">Prefix Stripping</div>
+    <p>If your platform uses a command prefix (e.g. <code>!</code> or <code>/</code>), strip it
+    from <code>envelope.text</code> before calling <code>robot.receive()</code> — or pass the
+    prefix to <code>normalizeCommandName()</code> during command resolution.</p>
+  </div>
+</div>
+
+<h2 id="response-rendering">Response Rendering</h2>
+
+<p>The framework delivers one of three response shapes to your <code>send()</code> method. Handle all three:</p>
+
+<pre data-lang="js"><code>async send(envelope, message) {
+  if (message.native?.provider === this.name) {
+    // 🔵 Provider-native payload — pass through directly
+    await this.client.chat.postMessage({
+      channel: envelope.channel.id,
+      ...message.native.payload
+    })
+    return
+  }
+
+  if (message.blocks) {
+    // 🟡 Structured IR — render blocks to provider format
+    const providerBlocks = this.renderBlocks(message.blocks)
+    await this.client.chat.postMessage({
+      channel: envelope.channel.id,
+      text: message.text,
+      blocks: providerBlocks
+    })
+    return
+  }
+
+  // 🟢 Plain text fallback
+  await this.client.chat.postMessage({
+    channel: envelope.channel.id,
+    text: message.text
+  })
+}
+
+renderBlocks(blocks) {
+  return blocks.map(block => {
+    if (block.type === 'section') {
+      return { type: 'section', text: { type: 'mrkdwn', text: block.text } }
+    }
+    if (block.type === 'facts') {
+      const fields = block.items.map(i => ({
+        type: 'mrkdwn', text: `*${i.label}:* ${i.value}`
+      }))
+      return { type: 'section', fields }
+    }
+    return block
+  })
+}</code></pre>
+
+<h2 id="slack-adapter">Slack Adapter Example</h2>
+
+<p>A complete Slack adapter using the Bolt SDK:</p>
+
+<pre data-lang="js"><code>// adapters/slack/app.js
+import { App } from '@slack/bolt'
+import { Robot } from '@devchitchat/chatopsjs'
+import { SlackAdapter } from './adapter.js'
+
+const app = new App({
+  token:         process.env.SLACK_BOT_TOKEN,
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  socketMode:    true,
+  appToken:      process.env.SLACK_APP_TOKEN
+})
+
+const robot = await Robot.create({ directory: './modules' })
+const slack = new SlackAdapter(robot, { app, prefix: '!' })
+robot.adapters.add(slack)
+await slack.start()
+await app.start()</code></pre>
+
+<pre data-lang="js"><code>// adapters/slack/adapter.js
+import { Adapter } from '@devchitchat/chatopsjs'
+
+export class SlackAdapter extends Adapter {
+  constructor(robot, { app, prefix = '!' } = {}) {
+    super(robot, 'slack')
+    this.app    = app
+    this.prefix = prefix
+  }
+
+  async start() {
+    this.app.message(async ({ message, say }) => {
+      if (!message.text?.startsWith(this.prefix)) return
+
+      const envelope = this.messageToEnvelope(message)
+      const result = await this.robot.receive(envelope)
+
+      if (result.ok && result.response) {
+        await this.send(envelope, result.response)
+      }
+    })
+  }
+
+  messageToEnvelope(message) {
+    const permissions = this.resolvePermissions(message)
+
+    return {
+      adapter: this.name,
+      type:    'message',
+      text:    message.text.slice(this.prefix.length).trim(),
+      actor: {
+        id:          message.user,
+        permissions
+      },
+      channel: {
+        id: message.channel
+      },
+      slack: message
+    }
+  }
+
+  resolvePermissions(message) {
+    return []
+  }
+
+  async send(envelope, message) {
+    const { channel } = envelope.channel
+
+    if (message.native?.provider === 'slack') {
+      await this.app.client.chat.postMessage({ channel, ...message.native.payload })
+      return
+    }
+
+    if (message.blocks) {
+      await this.app.client.chat.postMessage({
+        channel,
+        text:   message.text,
+        blocks: this.renderBlocks(message.blocks)
+      })
+      return
+    }
+
+    await this.app.client.chat.postMessage({ channel, text: message.text })
+  }
+
+  renderBlocks(blocks) {
+    return blocks.flatMap(block => {
+      if (block.type === 'section') {
+        return [{ type: 'section', text: { type: 'mrkdwn', text: block.text } }]
+      }
+      if (block.type === 'facts') {
+        return [{
+          type:   'section',
+          fields: block.items.map(i => ({
+            type: 'mrkdwn',
+            text: `*${i.label}:*\n${i.value}`
+          }))
+        }]
+      }
+      return []
+    })
+  }
+}</code></pre>
+
+<h2 id="discord-adapter">Discord Adapter Example</h2>
+
+<p>The Discord adapter ships as an example in the repository. Here's its core structure:</p>
+
+<pre data-lang="js"><code>// examples/discord/adapter.js  (simplified)
+import { Adapter } from '@devchitchat/chatopsjs'
+import { PermissionFlagsBits } from 'discord.js'
+
+const PERMISSION_MAP = {
+  [PermissionFlagsBits.ManageMessages]: 'messages:manage',
+  [PermissionFlagsBits.BanMembers]:     'members:ban',
+  [PermissionFlagsBits.Administrator]:  'admin'
+}
+
+export class DiscordAdapter extends Adapter {
+  constructor(robot, { client, prefix = '!' } = {}) {
+    super(robot, 'discord')
+    this.client = client
+    this.prefix = prefix
+  }
+
+  async start() {
+    this.client.on('messageCreate', async (message) => {
+      if (message.author.bot) return
+      if (!message.content.startsWith(this.prefix)) return
+
+      const envelope = this.messageToEnvelope(message)
+      const result   = await this.robot.receive(envelope)
+
+      if (result.ok && result.response) {
+        await this.send(envelope, result.response)
+      } else if (!result.ok && result.error) {
+        await message.reply(result.error.message ?? 'Unknown error')
+      }
+    })
+  }
+
+  messageToEnvelope(message) {
+    const permissions = createDiscordPermissionList(message)
+    return {
+      adapter: this.name,
+      type:    'message',
+      text:    message.content.slice(this.prefix.length).trim(),
+      actor: {
+        id: message.author.id,
+        permissions
+      },
+      channel: {
+        id:      message.channelId,
+        guildId: message.guildId ?? null
+      },
+      discord: message
+    }
+  }
+
+  async send(envelope, message) {
+    const channel = await this.client.channels.fetch(envelope.channel.id)
+
+    if (message.native?.provider === 'discord') {
+      await channel.send(message.native.payload)
+      return
+    }
+
+    if (message.blocks) {
+      const embeds = this.blocksToEmbeds(message.blocks)
+      await channel.send({ content: message.text, embeds })
+      return
+    }
+
+    await channel.send({ content: message.text })
+  }
+
+  blocksToEmbeds(blocks) {
+    const embed = { fields: [] }
+    for (const block of blocks) {
+      if (block.type === 'section') embed.description = block.text
+      if (block.type === 'facts') {
+        block.items.forEach(i => embed.fields.push({ name: i.label, value: i.value, inline: true }))
+      }
+    }
+    return [embed]
+  }
+}
+
+function createDiscordPermissionList(message) {
+  if (!message.member?.permissions) return []
+  return Object.entries(PERMISSION_MAP)
+    .filter(([flag]) => message.member.permissions.has(BigInt(flag)))
+    .map(([, grant]) => grant)
+}</code></pre>
+
+<h2 id="registering">Registering and Starting</h2>
+
+<pre data-lang="js"><code>const robot  = await Robot.create({ directory: './modules' })
+const adapter = new MyAdapter(robot, { /* options */ })
+
+robot.adapters.add(adapter)   // register
+await adapter.start()         // bootstrap provider connection</code></pre>
+
+<div class="callout info">
+  <span class="callout-icon">📡</span>
+  <div class="callout-body">
+    <div class="callout-title">Loading adapters from the CLI</div>
+    <p>The built-in CLI launcher supports loading external adapters with the <code>--adapter</code> flag:</p>
+    <pre style="margin:8px 0 0"><code>bun run src/cli.js --adapter ./adapters/slack/app.js</code></pre>
+  </div>
+</div>
+</div>

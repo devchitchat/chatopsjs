@@ -1,0 +1,134 @@
+<template data-slot="title">Mission Control</template>
+<template data-slot="description">chatops.js — A command-first ChatOps framework for Bun. Build deterministic, auditable chat bots for Slack, Discord, Teams, and beyond.</template>
+
+<div class="hero">
+  <span class="rocket-art">🚀</span>
+  <div class="hero-eyebrow">Mission Control · T-0 · All Systems Go</div>
+  <h1 class="hero-title">chatops.js<br><span>Command-First ChatOps</span></h1>
+  <p class="hero-subtitle">
+    A deterministic, auditable ChatOps framework for Bun. Route chat commands to infrastructure
+    with confidence — built for Slack, Discord, Teams, CLI, and any adapter you write.
+  </p>
+  <div class="hero-actions">
+    <a href="/getting-started" class="btn btn-primary">🚀 Launch Sequence</a>
+    <a href="/api" class="btn btn-outline">📡 API Reference</a>
+    <a href="https://github.com/devchitchat/chatopsjs" class="btn btn-outline" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="mission-label">Mission Parameters</div>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🎯</span>
+      <div class="feature-title">Command-First</div>
+      <p class="feature-desc">Canonical command IDs instead of fragile regex patterns. Every action is predictable and auditable.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔌</span>
+      <div class="feature-title">Thin Adapters</div>
+      <p class="feature-desc">Adapters translate — they don't decide. Business logic lives in commands, not in platform glue code.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🛡️</span>
+      <div class="feature-title">Permissions &amp; Confirmation</div>
+      <p class="feature-desc">Built-in permission grants and confirmation flows for destructive operations. Safety first.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🧩</span>
+      <div class="feature-title">Module System</div>
+      <p class="feature-desc">Drop <code>.js</code> files into your modules directory. They load automatically — no central registry needed.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📋</span>
+      <div class="feature-title">Audit Built-In</div>
+      <p class="feature-desc">Correlation IDs and lifecycle events on every command. Know exactly who did what, and when.</p>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⚡</span>
+      <div class="feature-title">Bun Native</div>
+      <p class="feature-desc">Built for <a href="https://bun.sh" target="_blank" rel="noopener">Bun</a>. Zero runtime dependencies. Fast startup, fast execution.</p>
+    </div>
+  </div>
+
+  <div class="mission-label">Quick Start</div>
+
+  <pre data-lang="bash"><code>bun add @devchitchat/chatopsjs</code></pre>
+
+  <pre data-lang="js"><code>import { Robot, Command, createTextResponse } from '@devchitchat/chatopsjs'
+
+const robot = await Robot.create({ directory: './modules' })
+
+// Modules auto-load from ./modules/*.js
+// Or register commands inline:
+robot.commands.register(new Command({
+  id: 'hello',
+  description: 'Say hello from mission control',
+  handler: async (ctx) =&gt; createTextResponse(
+    `Hello ${ctx.envelope.actor.id}! All systems nominal. 🚀`
+  )
+}))
+
+// Start the built-in CLI adapter
+import { CliAdapter } from '@devchitchat/chatopsjs'
+const cli = new CliAdapter(robot)
+robot.adapters.add(cli)
+await cli.start()</code></pre>
+
+  <pre data-lang="bash"><code>$ bun run src/cli.js
+chatops&gt; hello
+Hello mission-control! All systems nominal. 🚀</code></pre>
+
+  <div class="mission-label">The Architecture</div>
+
+  <p>chatops.js is structured in five clean layers — each with a single, well-defined responsibility:</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Layer</th>
+          <th>Responsibility</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Kernel / Robot</strong></td><td>Lifecycle, middleware chain, command dispatch, audit logging</td></tr>
+        <tr><td><strong>Adapters</strong></td><td>Normalize provider events → envelopes; translate responses back</td></tr>
+        <tr><td><strong>Command Bus</strong></td><td>Register, resolve, validate, authorize, confirm commands</td></tr>
+        <tr><td><strong>Modules</strong></td><td>Package commands and middleware as isolated, auto-loaded plugins</td></tr>
+        <tr><td><strong>Storage</strong></td><td>Ephemeral per-invocation state + pluggable durable storage</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <span class="callout-icon">📡</span>
+    <div class="callout-body">
+      <div class="callout-title">The Hubot Successor</div>
+      <p>chatops.js is a modern successor to Hubot — deterministic where Hubot was ambient, auditable where Hubot was opaque, and strongly-typed where Hubot relied on pattern matching.</p>
+    </div>
+  </div>
+
+  <div class="mission-label">Next Steps</div>
+
+  <div class="feature-grid">
+    <a href="/getting-started" class="feature-card" style="text-decoration:none">
+      <span class="feature-icon">▶</span>
+      <div class="feature-title">Getting Started</div>
+      <p class="feature-desc">Installation, your first command, running the CLI adapter.</p>
+    </a>
+    <a href="/adapters" class="feature-card" style="text-decoration:none">
+      <span class="feature-icon">⚡</span>
+      <div class="feature-title">Creating Adapters</div>
+      <p class="feature-desc">Connect chatops.js to Slack, Discord, Teams, or any platform.</p>
+    </a>
+    <a href="/modules" class="feature-card" style="text-decoration:none">
+      <span class="feature-icon">📦</span>
+      <div class="feature-title">Creating Modules</div>
+      <p class="feature-desc">Package commands and middleware into reusable modules.</p>
+    </a>
+  </div>
+
+</div>

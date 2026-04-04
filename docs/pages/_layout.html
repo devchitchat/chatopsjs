@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{slot:title || chatops.js}} — chatops.js</title>
+  <meta name="description" content="{{slot:description || chatops.js documentation}}">
+  <meta property="og:title" content="{{slot:title || chatops.js}} — chatops.js">
+  <meta property="og:description" content="{{slot:description || chatops.js documentation}}">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+</head>
+<body>
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">☰</button>
+
+  <div class="layout">
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="mission-patch">
+          <div class="patch-icon">🚀</div>
+          <div class="patch-text">
+            <strong>chatops.js</strong>
+            <span>v0.1.0 — Mission Active</span>
+          </div>
+        </div>
+        <div class="mission-status">Systems nominal</div>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-section-title">Navigation</div>
+        <a href="/" class="nav-link" data-nav="home">
+          <span class="nav-icon">🚀</span>Home</a>
+        <div class="nav-section-title">Mission Briefings</div>
+        <a href="/getting-started" class="nav-link" data-nav="getting-started">
+          <span class="nav-icon">▶</span>Getting Started</a>
+        <div class="nav-section-title">Field Manuals</div>
+        <a href="/adapters" class="nav-link" data-nav="adapters">
+          <span class="nav-icon">⚡</span>Creating Adapters</a>
+        <a href="/modules" class="nav-link" data-nav="modules">
+          <span class="nav-icon">📦</span>Creating Modules</a>
+        <a href="/use-cases" class="nav-link" data-nav="use-cases">
+          <span class="nav-icon">🛸</span>Common Use Cases</a>
+        <div class="nav-section-title">Technical Data</div>
+        <a href="/api" class="nav-link" data-nav="api">
+          <span class="nav-icon">📡</span>API Reference</a>
+      </div>
+
+      <div class="sidebar-footer">
+        <a href="https://github.com/devchitchat/chatopsjs" target="_blank" rel="noopener">GitHub ↗</a>
+        &nbsp;·&nbsp;
+        <a href="https://www.npmjs.com/package/@devchitchat/chatopsjs" target="_blank" rel="noopener">npm ↗</a>
+      </div>
+    </nav>
+
+    <main class="main">
+      {{content}}
+    </main>
+  </div>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
