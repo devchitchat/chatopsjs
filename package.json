@@ -25,9 +25,9 @@
     "start": "bun run src/cli.js",
     "test": "bun test",
     "example:discord": "bun run src/cli.js --adapter ./examples/discord/app.js",
-    "docs:build": "bunx @devchitchat/index97 build docs/pages --out dist --path-prefix /chatopsjs",
-    "docs:watch": "bunx @devchitchat/index97 dev docs/pages",
-    "docs:serve": "bunx @devchitchat/index97 build docs/pages --out dist && bunx @devchitchat/index97 serve dist"
+    "docs:build": "bunx @devchitchat/index97@1.1.0 build docs/pages --out dist --path-prefix /chatopsjs",
+    "docs:watch": "bunx @devchitchat/index97@1.1.0 dev docs/pages",
+    "docs:serve": "bunx @devchitchat/index97@1.1.0 build docs/pages --out dist && bunx @devchitchat/index97@1.1.0 serve dist"
   },
   "keywords": [
     "chatops",
@@ -46,7 +46,6 @@
     "bun": ">=1.0.0"
   },
   "devDependencies": {
-    "@devchitchat/index97": "^1.1.0",
     "@types/bun": "latest"
   },
   "peerDependencies": {
