@@ -27,7 +27,6 @@
     "example:discord": "bun run src/cli.js --adapter ./examples/discord/app.js",
     "docs:build:github": "bunx @devchitchat/index97@1.1.0 build docs/pages --out dist --path-prefix /chatopsjs/",
     "docs:build": "bunx @devchitchat/index97@1.1.0 build docs/pages --out dist",
-    "docs:watch": "bunx @devchitchat/index97@1.1.0 dev docs/pages",
     "docs:serve": "bunx @devchitchat/index97@1.1.0 build docs/pages --out dist && bunx @devchitchat/index97@1.1.0 serve dist"
   },
   "keywords": [
