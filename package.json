@@ -1,23 +1,62 @@
 {
   "name": "@devchitchat/chatopsjs",
-  "description": "A Bun chatops framework.",
   "version": "0.0.0",
+  "description": "A Bun chatops framework.",
+  "main": "index.js",
   "type": "module",
-  "main": "src/index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "bin": {
+    "chatopsjs": "src/cli.js"
+  },
   "files": [
-    "src/",
     "index.js",
-    "README.md"
+    "README.md",
+    "src/index.js",
+    "src/program.js",
+    "src/lib/Adapter.js",
+    "src/lib/CliAdapter.js",
+    "src/lib/Robot.js",
+    "src/lib/Command.js",
+    "src/lib/Response.js"
   ],
   "scripts": {
     "start": "bun run src/cli.js",
-    "example:discord": "bun run src/cli.js --adapter ./examples/discord/app.js",
     "test": "bun test",
+    "example:discord": "bun run src/cli.js --adapter ./examples/discord/app.js",
     "docs:build": "bunx @devchitchat/index97 build docs/pages --out dist",
     "docs:watch": "bunx @devchitchat/index97 dev docs/pages",
     "docs:serve": "bunx @devchitchat/index97 build docs/pages --out dist && bunx index97 serve dist"
   },
+  "keywords": [
+    "chatops",
+    "framework",
+    "chatbot",
+    "automation"
+  ],
+  "author": "Joey Guerra",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devchitchat/chatopsjs.git"
+  },
+  "homepage": "https://github.com/devchitchat/chatopsjs#readme",
+  "engines": {
+    "bun": ">=1.0.0"
+  },
   "devDependencies": {
     "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
