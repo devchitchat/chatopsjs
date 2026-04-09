@@ -27,7 +27,7 @@
     "example:discord": "bun run src/cli.js --adapter ./examples/discord/app.js",
     "docs:build": "bunx @devchitchat/index97 build docs/pages --out dist",
     "docs:watch": "bunx @devchitchat/index97 dev docs/pages",
-    "docs:serve": "bunx @devchitchat/index97 build docs/pages --out dist && bunx index97 serve dist"
+    "docs:serve": "bunx @devchitchat/index97 build docs/pages --out dist && bunx @devchitchat/index97 serve dist"
   },
   "keywords": [
     "chatops",

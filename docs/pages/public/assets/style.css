@@ -3,9 +3,6 @@
    NASA 60s Mission Control Theme
    ===================================================== */
 
-/* --- Google Fonts --- */
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap');
-
 /* --- CSS Custom Properties: Dark (Space) Mode --- */
 :root {
   --bg:            #07071a;
@@ -27,8 +24,8 @@
   --accent-amber:  #f5b700;   /* warning amber */
   --accent-red:    #e83030;
 
-  --font-mono: 'Space Mono', 'Courier New', monospace;
-  --font-sans: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+  --font-sans: system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
 
   --nav-width:    280px;
   --header-h:      60px;
@@ -864,4 +861,36 @@ tbody td code { font-size: 0.82em; }
   .hero-title { font-size: 1.6rem; }
   .page-title { font-size: 1.8rem; }
   .feature-grid { grid-template-columns: 1fr; }
+}
+
+/* --- Page-level table-of-contents nav --- */
+.toc-nav {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 40px;
+}
+.toc-nav-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-faint);
+  margin-bottom: 12px;
+}
+.toc-nav-grid {
+  display: grid;
+  gap: 6px;
+  font-size: 0.875rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+.toc-nav-grid--wide {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+/* --- Callout pre block --- */
+.callout-pre {
+  margin: 8px 0 0;
 }
