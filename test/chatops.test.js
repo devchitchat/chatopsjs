@@ -65,6 +65,39 @@ describe('chatops robot', () => {
     expect(events.some(entry => entry.event === 'command.completed')).toBe(true)
   })
 
+  test('confirmation.approved bypasses pending confirmation and clears the entry', async () => {
+    const robot = new Robot()
+
+    robot.commands.register(new Command({
+      id: 'deploy.run',
+      description: 'Deploy to production',
+      permissions: ['deploy:write'],
+      confirm: { mode: 'required' },
+      handler: async () => ({ text: 'Deployed.' })
+    }))
+
+    const actor   = { id: 'bot', permissions: ['deploy:write'] }
+    const channel = { id: 'ops' }
+
+    // First call — chatopsjs stores the pending entry
+    const pending = await robot.receive({ adapter: 'cli', text: 'deploy.run', actor, channel })
+    expect(pending.ok).toBe(false)
+    expect(pending.error.code).toBe('confirmation_required')
+
+    // Bypass with confirmation.approved — should clear the entry and execute
+    const approved = await robot.receive({
+      adapter: 'cli', text: 'deploy.run', actor, channel,
+      confirmation: { approved: true },
+    })
+    expect(approved.ok).toBe(true)
+    expect(approved.response.text).toBe('Deployed.')
+
+    // Pending entry was cleared — a fresh call returns confirmation_required again (not executed)
+    const next = await robot.receive({ adapter: 'cli', text: 'deploy.run', actor, channel })
+    expect(next.ok).toBe(false)
+    expect(next.error.code).toBe('confirmation_required')
+  })
+
   test('returns an error for unknown input', async () => {
     const robot = new Robot()
 

@@ -273,13 +273,14 @@ export class Robot {
     const lowerText = envelope.text.trim().toLowerCase()
 
     if (this.#pendingConfirmations.has(key)) {
-      if (CONFIRMATION_NO.has(lowerText)) {
+      if (envelope.confirmation?.approved) {
+        // Caller already resolved confirmation externally — clear the entry and execute.
+        this.#pendingConfirmations.delete(key)
+      } else if (CONFIRMATION_NO.has(lowerText)) {
         this.#pendingConfirmations.delete(key)
         await adapter?.send(envelope, { text: 'Cancelled.' })
         return { ok: false, error: { code: 'confirmation_cancelled' }, meta }
-      }
-
-      if (CONFIRMATION_YES.has(lowerText)) {
+      } else if (CONFIRMATION_YES.has(lowerText)) {
         const pendingEnvelope = this.#pendingConfirmations.get(key)
         this.#pendingConfirmations.delete(key)
         return this.receive({ ...pendingEnvelope, confirmation: { approved: true }, correlationId })
