@@ -7,7 +7,7 @@ const adapterSpecifier = resolveAdapterSpecifier(args)
 
 try {
   if (!args.adapterExplicit) {
-    const robot = await Robot.create({ baseUrl: import.meta.url })
+    const robot = await Robot.create({ baseUrl: import.meta.url.replace('node_modules/@devchitchat/chatopsjs/src/cli.js', '') })
     const adapter = new CliAdapter(robot, {
       actor: { id: 'local-user', permissions: ['tickets:write'] },
       prefix: '!'
