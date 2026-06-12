@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { parseProgramArgs, resolveAdapterSpecifier, loadAdapterModule } from './program.js'
 import { Robot } from './index.js'
 import { CliAdapter } from './lib/CliAdapter.js'
