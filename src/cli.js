@@ -15,6 +15,7 @@ try {
     })
     robot.adapters.add(adapter)
     console.log('chatopsjs CLI')
+    console.log('prefix with "!" to send messages/commands to bot')
     console.log('Type "help.commands" for commands, "exit" to quit')
     await adapter.start()
   } else {
