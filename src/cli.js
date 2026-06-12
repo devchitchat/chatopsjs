@@ -15,7 +15,7 @@ try {
     })
     robot.adapters.add(adapter)
     console.log('chatopsjs CLI')
-    console.log('Type "help" for commands, "exit" to quit')
+    console.log('Type "help.commands" for commands, "exit" to quit')
     await adapter.start()
   } else {
     const { runAdapterApp } = await loadAdapterModule(adapterSpecifier)
