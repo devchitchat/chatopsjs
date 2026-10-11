@@ -15,4 +15,11 @@ export class Adapter {
   async start() {
     throw new Error(`${this.constructor.name} must implement start()`)
   }
+
+  /**
+   * Edit a previously sent message in-place.
+   * message may be a plain { text } object or a card response from createCardResponse().
+   * Adapters that support editing should override this; others leave it as a no-op.
+   */
+  async edit(_channelId, _msgId, _message) {}
 }
