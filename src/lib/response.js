@@ -51,11 +51,14 @@ export function cardWithToolCall(card, toolCall) {
 
 /**
  * Return a new card response with the named tool call's status updated.
- * Matches on the last tool call with the given name that is still 'running'.
+ * When toolUseId is supplied, matches by id (parallel same-name tools stay correct).
+ * Falls back to last-running-by-name when toolUseId is not provided (backward compat).
  */
-export function cardWithToolResult(card, name, resultSummary, status = 'done') {
+export function cardWithToolResult(card, name, resultSummary, status = 'done', toolUseId = null) {
   const toolCalls = [...(card.card?.toolCalls ?? [])]
-  const idx = toolCalls.findLastIndex(t => t.name === name && t.status === 'running')
+  const idx = toolUseId != null
+    ? toolCalls.findLastIndex(t => t.toolUseId === toolUseId && t.status === 'running')
+    : toolCalls.findLastIndex(t => t.name === name && t.status === 'running')
   if (idx !== -1) {
     toolCalls[idx] = { ...toolCalls[idx], status, resultSummary }
   }
@@ -81,11 +84,20 @@ export function cardWithBody(card, body, status = 'streaming') {
 
 /**
  * Return a new card response marked done with final usage data.
+ * Any tool calls still 'running' are marked 'done' with no summary (they ran but
+ * no result event arrived before the agent finished).
+ * Pass body / fallbackText to override the current card's values.
  */
-export function cardDone(card, { usage = null } = {}) {
+export function cardDone(card, { usage = null, body = undefined, fallbackText = undefined } = {}) {
+  const toolCalls = (card.card?.toolCalls ?? []).map(t =>
+    t.status === 'running' ? { ...t, status: 'done', resultSummary: null } : t
+  )
+  const resolvedBody = body !== undefined ? body : (card.card?.body ?? null)
   return createCardResponse({
     ...card.card,
-    fallbackText: card.text,
+    toolCalls,
+    body: resolvedBody,
+    fallbackText: fallbackText ?? card.text,
     status: 'done',
     usage,
   })
@@ -93,10 +105,15 @@ export function cardDone(card, { usage = null } = {}) {
 
 /**
  * Return a new card response in error state.
+ * Any tool calls still 'running' are marked 'error'.
  */
 export function cardError(card, message) {
+  const toolCalls = (card.card?.toolCalls ?? []).map(t =>
+    t.status === 'running' ? { ...t, status: 'error' } : t
+  )
   return createCardResponse({
     ...card.card,
+    toolCalls,
     fallbackText: message,
     body: message,
     status: 'error',
