@@ -107,8 +107,9 @@ async function collectModulePaths(directory) {
   for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
     const entryPath = path.join(directory, entry.name)
     if (entry.isDirectory()) {
+      if (entry.name === '__tests__' || entry.name === '__mocks__') continue
       modulePaths.push(...await collectModulePaths(entryPath))
-    } else if (entry.isFile() && entry.name.endsWith('.js')) {
+    } else if (entry.isFile() && entry.name.endsWith('.js') && !entry.name.endsWith('.test.js') && !entry.name.endsWith('.spec.js')) {
       modulePaths.push(entryPath)
     }
   }
