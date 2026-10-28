@@ -30,10 +30,12 @@ export function createNativeResponse({ fallbackText, provider, payload }) {
  * fallbackText is sent as the plain .text field for adapters that do not
  * render cards (CLI, Discord, etc.).
  */
-export function createCardResponse({ status, body = null, toolCalls = [], usage = null, fallbackText = '' }) {
+export function createCardResponse({ status, body = null, toolCalls = [], usage = null, fallbackText = '', receipt = undefined }) {
+  const card = { status, body, toolCalls, usage }
+  if (receipt !== undefined) card.receipt = receipt
   return {
     text: fallbackText,
-    card: { status, body, toolCalls, usage },
+    card,
   }
 }
 
@@ -88,11 +90,13 @@ export function cardWithBody(card, body, status = 'streaming') {
  * no result event arrived before the agent finished).
  * Pass body / fallbackText to override the current card's values.
  */
-export function cardDone(card, { usage = null, body = undefined, fallbackText = undefined } = {}) {
+export function cardDone(card, { usage = null, body = undefined, fallbackText = undefined, receipt = undefined } = {}) {
   const toolCalls = (card.card?.toolCalls ?? []).map(t =>
     t.status === 'running' ? { ...t, status: 'done', resultSummary: null } : t
   )
   const resolvedBody = body !== undefined ? body : (card.card?.body ?? null)
+  // receipt: explicit arg takes priority; otherwise preserve what's already on card.card
+  const resolvedReceipt = receipt !== undefined ? receipt : card.card?.receipt
   return createCardResponse({
     ...card.card,
     toolCalls,
@@ -100,6 +104,7 @@ export function cardDone(card, { usage = null, body = undefined, fallbackText = 
     fallbackText: fallbackText ?? card.text,
     status: 'done',
     usage,
+    receipt: resolvedReceipt,
   })
 }
 
